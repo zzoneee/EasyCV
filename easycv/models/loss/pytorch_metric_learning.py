@@ -115,6 +115,8 @@ class CrossEntropyLossWithLabelSmooth(nn.Module):
 
     def forward(self, input, target):
 
+        # print("************************target*********************:", target.shape)
+
         if hasattr(self, 'cls') and self.with_cls:
             input = self.cls(input)
         target = target.long()
@@ -272,3 +274,38 @@ class SoftTargetCrossEntropy(nn.Module):
     def forward(self, x: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         loss = torch.sum(-target * F.log_softmax(x, dim=-1), dim=-1)
         return loss.mean()
+
+
+@LOSSES.register_module
+class KLDivergence(nn.Module):
+
+    def __init__(self, T=1.0, gamma=0.1, alpha=0.9, **kwargs):
+        """
+        Knowledge distillation loss
+        Args:
+
+            T : temperature, default: 1.0
+            gamma : the weight of the cross-entropy loss between logit and ground truth, default: 0.1
+            alpha : the weight of the KD loss, default: 0.9
+        """
+        super(KLDivergence, self).__init__()
+
+        self.T = T
+        self.gamma = gamma
+        self.alpha = alpha
+
+    def forward(self, x: torch.Tensor, target: torch.Tensor,
+                teacher_target: torch.Tensor) -> torch.Tensor:
+        target = target.long()
+        log_softmax = nn.LogSoftmax(dim=1)
+        log_prob = log_softmax(x)
+        nllloss = nn.NLLLoss()
+        loss_ce = nllloss(log_prob, target)
+
+        loss_kd = self.T**2 * F.kl_div(
+            (x / self.T).softmax(dim=-1).log(),
+            (teacher_target / self.T).softmax(dim=-1),
+            reduction='sum') / x.shape[0]
+
+        loss = self.gamma * loss_ce + self.alpha * loss_kd
+        return loss

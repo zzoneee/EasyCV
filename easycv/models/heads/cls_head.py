@@ -91,6 +91,19 @@ class ClsHead(nn.Module):
             losses['acc'] = accuracy(cls_score[0], labels)
         return losses
 
+    def distill_loss(self, cls_score: List[torch.Tensor], labels: torch.Tensor,
+                     teacher_labels: torch.Tensor) -> Dict[str, torch.Tensor]:
+        """
+        Args:
+            cls_score: [N x num_classes]
+        """
+        losses = dict()
+        assert isinstance(cls_score, (tuple, list)) and len(cls_score) == 1
+        losses['loss'] = self.criterion(cls_score[0], labels, teacher_labels)
+        if len(labels.shape) == 1:
+            losses['acc'] = accuracy(cls_score[0], labels)
+        return losses
+
     def mixup_loss(self, cls_score, labels_1, labels_2,
                    lam) -> Dict[str, torch.Tensor]:
         losses = dict()

@@ -18,6 +18,7 @@ from .repvgg_yolox_backbone import RepVGGYOLOX
 from .resnest import ResNeSt
 from .resnet import ResNet
 from .resnet_jit import ResNetJIT
+from .resnetv1 import ResNetv1
 from .resnext import ResNeXt
 from .shuffle_transformer import ShuffleTransformer
 from .swin_transformer import SwinTransformer
